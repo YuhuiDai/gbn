@@ -269,7 +269,7 @@ int gbn_accept(int sockfd, struct sockaddr *client, socklen_t *socklen){
 	else rec_header = make_packet(SYNACK, 0, 0, NULL, 0);
 
 	/* check if successfully send to client (original connection requester) */
-	if (sendto(sockfd, rec_header, sizeof(rec_header), 0, client, socklen) == -1) {
+	if (sendto(sockfd, rec_header, sizeof(rec_header), 0, client, *socklen) == -1) {
 		free(rec_header);
 		return -1;
 	}
