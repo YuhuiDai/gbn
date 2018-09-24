@@ -1,5 +1,5 @@
 #include "gbn.h"
-
+state_t s;
 uint16_t checksum(uint16_t *buf, int nwords)
 {
 	uint32_t sum;
