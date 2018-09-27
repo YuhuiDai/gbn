@@ -2,6 +2,7 @@
 #define _gbn_h
 #define h_addr h_addr_list[0]
 
+#include<arpa/inet.h>
 #include<sys/types.h>
 #include<sys/socket.h>
 #include<sys/ioctl.h>
