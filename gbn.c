@@ -94,7 +94,7 @@ ssize_t gbn_send(int sockfd, const void *buf, size_t len, int flags){
 			gbnhdr packet;
 			make_packet(&packet, DATA, s.send_seqnum, -1, slicedBuf, currSize);
 			printf("db2 sending type: %d\n", packet.type);
-			if (attempts[i] < MAX_ATTEMPT && sendto(sockfd, &packet, sizeof(packet), flags, &s.receiverServerAddr, s.receiverSocklen) == -1) {
+			if (attempts[i] < MAX_ATTEMPT && sendto(sockfd, &packet, sizeof(packet), 0, &s.receiverServerAddr, s.receiverSocklen) == -1) {
 				attempts[i] ++;
 				continue;
 			}
@@ -137,7 +137,7 @@ ssize_t gbn_recv(int sockfd, void *buf, size_t len, int flags){
 	printf ("in receive\n");
 	gbnhdr sender_packet;
 RECV:
-	if (maybe_recvfrom(sockfd, buf, len, flags, &s.senderServerAddr, &s.senderSocklen) == -1) {
+	if (maybe_recvfrom(sockfd, sender_packet, (char *)&sender_packet, 0, &s.senderServerAddr, &s.senderSocklen) == -1) {
 		/*printf("error in gbn_recv pl1\n");*/
 		goto RECV;
 	}
@@ -152,7 +152,7 @@ RECV:
 			return 0;
 		}
 		int sender_packet_size = sender_packet.datalen;
-		if (checksum(buf, sender_packet_size) == -1) {
+		if (checksum(sender_packet.data, sender_packet_size) == -1) {
 			printf("data is corrupt\n");
 			return 0;
 		}
@@ -268,7 +268,7 @@ int gbn_connect(int sockfd, const struct sockaddr *server, socklen_t socklen){
 			make_packet(&send_header, SYNACK, 0, 0, NULL, 0);
 			printf("sending s yn ack!!!!!!!!!!!!!!!!!!!!!");
 			printf("db8 sending type: %d\n", send_header.type);
-			sendto(sockfd, &send_header, sizeof(send_header), 0, server, s.senderSocklen);
+			sendto(sockfd, &send_header, sizeof(send_header), 0, server, s.receiverSocklen);
 			return 0;
 		} else if (1) {
 			/* TODO if receive data, turn to rcvd mode */
