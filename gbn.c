@@ -93,7 +93,8 @@ ssize_t gbn_send(int sockfd, const void *buf, size_t len, int flags){
 
 			gbnhdr packet;
 			make_packet(&packet, DATA, s.send_seqnum, -1, slicedBuf, currSize);
-			if (attempts[i] < MAX_ATTEMPT && sendto(sockfd, &packet, sizeof(packet), flags, &s.senderServerAddr, s.senderSocklen) == -1) {
+			printf("db2 sending type: %d\n", packet.type);
+			if (attempts[i] < MAX_ATTEMPT && sendto(sockfd, &packet, sizeof(packet), flags, &s.receiverServerAddr, s.receiverSocklen) == -1) {
 				attempts[i] ++;
 				continue;
 			}
@@ -135,15 +136,16 @@ ssize_t gbn_recv(int sockfd, void *buf, size_t len, int flags){
 	/* receiver receive packet from sender and if valid, send DATAACK */
 	printf ("in receive\n");
 	gbnhdr sender_packet;
-	struct sockaddr tmp;
-	socklen_t tmp_int;
 RECV:
-	if (maybe_recvfrom(sockfd, (char *)&sender_packet, sizeof(sender_packet), 0, &tmp, &tmp_int) == -1) {
-	goto RECV;
+	if (maybe_recvfrom(sockfd, buf, len, flags, &s.senderServerAddr, &s.senderSocklen) == -1) {
+		/*printf("error in gbn_recv pl1\n");*/
+		goto RECV;
 	}
+	printf("gbn_recv pl1 success\n");
 
 	/* if a data packet is received, check packet to verify its type */
-	if (check_packetType(sender_packet, DATA) == 0){
+	/*if (check_packetType(sender_packet, DATA) == 0){*/
+	if (1) {
 		/* check data validity */
 		if (check_seqnum(sender_packet, s.rec_seqnum) == -1) {
 			 printf("received an unexpected seqnum, discarding data...\n");
@@ -160,8 +162,8 @@ RECV:
 		/* receiver reply with DATAACK header with seqnum received */
 		gbnhdr rec_header;
 		make_packet(&rec_header, DATAACK, s.rec_seqnum, 0, NULL, 0);
-
-		if (sendto(sockfd, &rec_header, sizeof(rec_header), 0, &s.receiverServerAddr, s.receiverSocklen) == -1) {
+		printf("db3 sending type: %d\n", rec_header.type);
+		if (sendto(sockfd, &rec_header, sizeof(rec_header), 0, &s.senderServerAddr, s.senderSocklen) == -1) {
 			printf ("error sending in gbn_recv\n");
 			return -1;
 		}
@@ -170,6 +172,7 @@ RECV:
 		s.rec_seqnum ++;
 		return sender_packet_size;
 	} else {
+		printf("why my head so big");
 		goto RECV;
 	}
 	printf("%d\n", sender_packet.type);
@@ -180,6 +183,7 @@ RECV:
 		printf("reply with FINACK header \n");
 		gbnhdr rec_header;
 		make_packet(&rec_header, FINACK, 0, 0, NULL, 0);
+		printf("db4 sending type: %d\n", rec_header.type);
 		if (sendto(sockfd, &rec_header, sizeof(rec_header), 0, &s.receiverServerAddr, s.receiverSocklen) == -1) return -1;
 		s.state = FIN_RCVD;
 		return 0;
@@ -198,6 +202,7 @@ int gbn_close(int sockfd){
 		printf("sending fin to close connection \n");
 		gbnhdr send_header;
 		make_packet(&send_header, FIN, 0, 0, NULL, 0);
+		printf("db5 sending type: %d\n", send_header.type);
 		if (sendto(sockfd, &send_header, sizeof(send_header), 0, &s.senderServerAddr, s.senderSocklen) == -1) return -1;
 
 		s.state = FIN_SENT;
@@ -208,6 +213,7 @@ int gbn_close(int sockfd){
 		printf("sending finack to close connection \n");
 		gbnhdr rec_header;
 		make_packet(&rec_header, FINACK, 0, 0, NULL, 0);
+		printf("db6 sending type: %d\n", rec_header.type);
 		if (sendto(sockfd, &rec_header, sizeof(rec_header), 0, &s.receiverServerAddr, s.receiverSocklen) == -1) return -1;
 		printf("finack sent to close connection\n");
 		close(sockfd);
@@ -234,11 +240,14 @@ int gbn_connect(int sockfd, const struct sockaddr *server, socklen_t socklen){
 
 	/* send SYN and wait for SYNACK. after that, send a SYNACK back. */
 	while (attempt < MAX_ATTEMPT) {
+		printf("db7 sending type: %d\n", send_header.type);
 		if (sendto(sockfd, &send_header, sizeof(send_header), 0, server, socklen) == -1 ) {
 			attempt ++;
 			printf("sender send syn failed\n");
 			continue;
 		}
+		s.receiverServerAddr = *server;
+		s.receiverSocklen = socklen;
 		s.state = SYN_SENT;
 		printf("sent type: %d\n", send_header.type);
 		alarm(TIMEOUT);
@@ -258,6 +267,7 @@ int gbn_connect(int sockfd, const struct sockaddr *server, socklen_t socklen){
 			printf("sender connection established\n");
 			make_packet(&send_header, SYNACK, 0, 0, NULL, 0);
 			printf("sending s yn ack!!!!!!!!!!!!!!!!!!!!!");
+			printf("db8 sending type: %d\n", send_header.type);
 			sendto(sockfd, &send_header, sizeof(send_header), 0, server, s.senderSocklen);
 			return 0;
 		} else if (1) {
@@ -275,7 +285,7 @@ int gbn_connect(int sockfd, const struct sockaddr *server, socklen_t socklen){
 int gbn_listen(int sockfd, int backlog){
 	printf("in listen\n");
 	gbnhdr send_header;
-	while(1) {
+	while(0) {
 		/* receiver receive from (listen to) header of the request to connect */
 		if (maybe_recvfrom(sockfd, (char *)&send_header, sizeof(send_header), 0, &s.senderServerAddr, &s.senderSocklen) == -1) {
 			printf("error rec syn from sender\n");
@@ -290,7 +300,7 @@ int gbn_listen(int sockfd, int backlog){
 		printf("received send_header type: %d\n",send_header.type);
 	}
 
-	return -1;
+	return 0;
 }
 
 int gbn_bind(int sockfd, const struct sockaddr *server, socklen_t socklen){
@@ -324,25 +334,35 @@ int gbn_accept(int sockfd, struct sockaddr *client, socklen_t *socklen){
 	if (s.state == FIN_SENT) make_packet(&rec_header, RST, 0, 0, NULL, 0);
 	/* accept connection initiation by sending header with SYNACK */
 	else make_packet(&rec_header, SYNACK, 0, 0, NULL, 0);
-
-	client = &s.senderServerAddr;
+	
+	
 
 	signal(SIGALRM, sig_handler);
 
 
 	int attempt = 0;
 	s.timed_out = -1;
-	/* send SYNACK and wait for SYNACK. */
+	gbnhdr send_header;
+	/* wait for SYN, then send SYNACK and wait for SYNACK. */
 	while (attempt < MAX_ATTEMPT) {
-		if (sendto(sockfd, &rec_header, sizeof(rec_header), 0, client, s.senderSocklen) == -1 ) {
+		printf("enter accpet while\n");
+		if (maybe_recvfrom(sockfd, (char *)&send_header, sizeof(send_header), 0, client, socklen) == -1) {
+			printf("error rec syn from sender\n");
+			return -1;
+		}
+		printf("receive type: %d\n", send_header.type);
+		printf("sending type: %d\n", rec_header.type);
+		if (sendto(sockfd, &rec_header, sizeof(rec_header), 0, client, *socklen) == -1 ) {
 			attempt ++;
 			printf("receiver send synack failed\n");
 			continue;
 		}
+		s.senderServerAddr = *client;
+		s.senderSocklen = *socklen;
 		printf("receiver sent synack header\n");
 		alarm(TIMEOUT);
 		/* waiting for receiving SYNACK */
-		gbnhdr send_header;
+		
 		printf("old send_header type: %d\n", send_header.type);
 		struct sockaddr tmp;
 		socklen_t tmp_int;
