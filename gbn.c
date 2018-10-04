@@ -54,8 +54,8 @@ void make_packet(gbnhdr* packet,uint8_t type, uint8_t seqnum, int isHeader, char
  * 1.packet,
  * 2.expected type
  */
-int check_packetType(gbnhdr *packet, int type) {
-	if (packet->type != type) return -1;
+int check_packetType(const gbnhdr packet, int type) {
+	if (packet.type != type) return -1;
 	return 0;
 }
 
@@ -64,8 +64,8 @@ int check_packetType(gbnhdr *packet, int type) {
  * rec_seqnum should be expected seqnum
  * seq for ACK should be last sent seqnum
  */
-int check_seqnum(gbnhdr *packet, int expected) {
-	if (packet->seqnum != expected) return -1;
+int check_seqnum(const gbnhdr packet, int expected) {
+	if (packet.seqnum != expected) return -1;
 	return 0;
 }
 
@@ -267,7 +267,7 @@ int gbn_connect(int sockfd, const struct sockaddr *server, socklen_t socklen){
 	printf("in gbn connect\n");
 	/* Define Global State */
 	s.mode = SLOW;
-	s.senderServerAddr = (struct sockaddr *)server;
+	s.senderServerAddr = *server;
 	s.senderSocklen = socklen;
 
 	gbnhdr send_header;
@@ -320,7 +320,7 @@ int gbn_listen(int sockfd, int backlog){
 int gbn_bind(int sockfd, const struct sockaddr *server, socklen_t socklen){
 
     /* pointer to local struct on receiver server where sender address is to be stored */
-    s.receiverServerAddr = (struct sockaddr *)server;
+    s.receiverServerAddr = *server;
     s.receiverSocklen = socklen;
     printf("in bind\n");
     return bind(sockfd, server, socklen);
@@ -373,9 +373,9 @@ int gbn_accept(int sockfd, struct sockaddr *client, socklen_t *socklen){
 			}
 			syned = 1;
 			cli = *tmp_sock;
-			cli_len = *tmp_sock;
+			cli_len = *tmp_sock_len;
 		}
-		if (sendto(sockfd, &rec_header, sizeof(gbnhdr), 0, cli, *cli_len) == -1 ) {
+		if (sendto(sockfd, &rec_header, sizeof(gbnhdr), 0, &cli, cli_len) == -1 ) {
 			attempt ++;
 			printf("receiver send synack failed\n");
 			continue;
@@ -399,8 +399,6 @@ int gbn_accept(int sockfd, struct sockaddr *client, socklen_t *socklen){
 		} 
 		attempt ++;
 	}
-
-	free(rec_header);
 
 	return -1;
 }
