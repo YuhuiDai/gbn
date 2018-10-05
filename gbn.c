@@ -200,7 +200,6 @@ RECV:
 	} else {
 		goto RECV;
 	}
-
 	return(-1);
 }
 
@@ -212,56 +211,130 @@ int gbn_close(int sockfd){
     while (1) {
     	if (s.state == ESTABLISHED || s.state == SYN_SENT || s.state == SYN_RCVD) {
 			printf("client send fin to server to close connection \n");
-			gbnhdr send_header;
-			make_packet(&send_header, FIN, 0, 0, NULL, 0);
-			if (sendto(sockfd, &send_header, sizeof(send_header), 0, &serv, serv_len) == -1) return -1;
-			if (sendto(sockfd, &send_header, sizeof(send_header), 0, &serv, serv_len) == -1) return -1;
-			if (sendto(sockfd, &send_header, sizeof(send_header), 0, &serv, serv_len) == -1) return -1;
-			if (sendto(sockfd, &send_header, sizeof(send_header), 0, &serv, serv_len) == -1) return -1;
-			if (sendto(sockfd, &send_header, sizeof(send_header), 0, &serv, serv_len) == -1) return -1;
-			if (sendto(sockfd, &send_header, sizeof(send_header), 0, &serv, serv_len) == -1) return -1;
-			if (sendto(sockfd, &send_header, sizeof(send_header), 0, &serv, serv_len) == -1) return -1;
-			if (sendto(sockfd, &send_header, sizeof(send_header), 0, &serv, serv_len) == -1) return -1;
-			if (sendto(sockfd, &send_header, sizeof(send_header), 0, &serv, serv_len) == -1) return -1;
-			if (sendto(sockfd, &send_header, sizeof(send_header), 0, &serv, serv_len) == -1) return -1;
-			if (sendto(sockfd, &send_header, sizeof(send_header), 0, &serv, serv_len) == -1) return -1;
-			if (sendto(sockfd, &send_header, sizeof(send_header), 0, &serv, serv_len) == -1) return -1;
-			if (sendto(sockfd, &send_header, sizeof(send_header), 0, &serv, serv_len) == -1) return -1;
-			if (sendto(sockfd, &send_header, sizeof(send_header), 0, &serv, serv_len) == -1) return -1;
+			gbnhdr* send_header = malloc(sizeof(gbnhdr));
+			make_packet(send_header, FIN, 0, 0, NULL, 0);
+			if (sendto(sockfd, send_header, sizeof(*send_header), 0, &serv, serv_len) == -1) {
+				free(send_header);
+				return -1;
+			}
+			if (sendto(sockfd, send_header, sizeof(*send_header), 0, &serv, serv_len) == -1) {
+				free(send_header);
+				return -1;
+			}
+			if (sendto(sockfd, send_header, sizeof(*send_header), 0, &serv, serv_len) == -1) {
+				free(send_header);
+				return -1;
+			}
+			if (sendto(sockfd, send_header, sizeof(*send_header), 0, &serv, serv_len) == -1) {
+				free(send_header);
+				return -1;
+			}
+			if (sendto(sockfd, send_header, sizeof(*send_header), 0, &serv, serv_len) == -1) {
+				free(send_header);
+				return -1;
+			}
+			if (sendto(sockfd, send_header, sizeof(*send_header), 0, &serv, serv_len) == -1) {
+				free(send_header);
+				return -1;
+			}
+			if (sendto(sockfd, send_header, sizeof(*send_header), 0, &serv, serv_len) == -1) {
+				free(send_header);
+				return -1;
+			}
+			if (sendto(sockfd, send_header, sizeof(*send_header), 0, &serv, serv_len) == -1) {
+				free(send_header);
+				return -1;
+			}
+			if (sendto(sockfd, send_header, sizeof(*send_header), 0, &serv, serv_len) == -1) {
+				free(send_header);
+				return -1;
+			}
+			if (sendto(sockfd, send_header, sizeof(*send_header), 0, &serv, serv_len) == -1) {
+				free(send_header);
+				return -1;
+			}
+			if (sendto(sockfd, send_header, sizeof(*send_header), 0, &serv, serv_len) == -1) {
+				free(send_header);
+				return -1;
+			}
+			if (sendto(sockfd, send_header, sizeof(*send_header), 0, &serv, serv_len) == -1) {
+				free(send_header);
+				return -1;
+			}
+			if (sendto(sockfd, send_header, sizeof(*send_header), 0, &serv, serv_len) == -1) {
+				free(send_header);
+				return -1;
+			}
+			free(send_header);
+
 			s.state = FIN_SENT;
 
 		}
 		else if (s.state == FIN_SENT) {
 			struct sockaddr tmp_sock;
 			socklen_t tmp_sock_len;
-			gbnhdr finack_packet;
-			if (maybe_recvfrom(sockfd, (char *)&finack_packet, sizeof(finack_packet), 0, &tmp_sock, &tmp_sock_len) == -1) {
+			gbnhdr *finack_packet = malloc(sizeof(gbnhdr));
+			if (maybe_recvfrom(sockfd, (char *)finack_packet, sizeof(*finack_packet), 0, &tmp_sock, &tmp_sock_len) == -1) {
+				free(finack_packet);
 				continue;
 			}
 			if (finack_packet.type == FINACK) {
+				free(finack_packet);
 				printf("client close.\n");
 				return 0;
 			}
+			free(finack_packet);
 		/* if receiver sees a FIN header, reply with FINACK and close socket connection */
 		} else if (s.state == FIN_RCVD) {
 			printf("server send finack to client to close connection\n");
-			gbnhdr rec_header;
-			make_packet(&rec_header, FINACK, 0, 0, NULL, 0);
-			if (sendto(sockfd, &rec_header, sizeof(rec_header), 0, &cli, cli_len) == -1) return -1;
-			if (sendto(sockfd, &rec_header, sizeof(rec_header), 0, &cli, cli_len) == -1) return -1;
-			if (sendto(sockfd, &rec_header, sizeof(rec_header), 0, &cli, cli_len) == -1) return -1;
-			if (sendto(sockfd, &rec_header, sizeof(rec_header), 0, &cli, cli_len) == -1) return -1;
-			if (sendto(sockfd, &rec_header, sizeof(rec_header), 0, &cli, cli_len) == -1) return -1;
-			if (sendto(sockfd, &rec_header, sizeof(rec_header), 0, &cli, cli_len) == -1) return -1;
-			if (sendto(sockfd, &rec_header, sizeof(rec_header), 0, &cli, cli_len) == -1) return -1;
-			if (sendto(sockfd, &rec_header, sizeof(rec_header), 0, &cli, cli_len) == -1) return -1;
-			if (sendto(sockfd, &rec_header, sizeof(rec_header), 0, &cli, cli_len) == -1) return -1;
-			if (sendto(sockfd, &rec_header, sizeof(rec_header), 0, &cli, cli_len) == -1) return -1;
-			if (sendto(sockfd, &rec_header, sizeof(rec_header), 0, &cli, cli_len) == -1) return -1;
-			if (sendto(sockfd, &rec_header, sizeof(rec_header), 0, &cli, cli_len) == -1) return -1;
-			if (sendto(sockfd, &rec_header, sizeof(rec_header), 0, &cli, cli_len) == -1) return -1;
-			if (sendto(sockfd, &rec_header, sizeof(rec_header), 0, &cli, cli_len) == -1) return -1;
-			if (sendto(sockfd, &rec_header, sizeof(rec_header), 0, &cli, cli_len) == -1) return -1;
+			gbnhdr *rec_header = malloc(sizeof(gbnhdr));
+			make_packet(rec_header, FINACK, 0, 0, NULL, 0);
+			if (sendto(sockfd, &rec_header, sizeof(rec_header), 0, &cli, cli_len) == -1) {
+				free(rec_header);
+				return -1;
+			}
+			if (sendto(sockfd, &rec_header, sizeof(rec_header), 0, &cli, cli_len) == -1) {
+				free(rec_header);
+				return -1;
+			}
+			if (sendto(sockfd, &rec_header, sizeof(rec_header), 0, &cli, cli_len) == -1) {
+				free(rec_header);
+				return -1;
+			}
+			if (sendto(sockfd, &rec_header, sizeof(rec_header), 0, &cli, cli_len) == -1) {
+				free(rec_header);
+				return -1;
+			}
+			if (sendto(sockfd, &rec_header, sizeof(rec_header), 0, &cli, cli_len) == -1) {
+				free(rec_header);
+				return -1;
+			}
+			if (sendto(sockfd, &rec_header, sizeof(rec_header), 0, &cli, cli_len) == -1) {
+				free(rec_header);
+				return -1;
+			}
+			if (sendto(sockfd, &rec_header, sizeof(rec_header), 0, &cli, cli_len) == -1) {
+				free(rec_header);
+				return -1;
+			}
+			if (sendto(sockfd, &rec_header, sizeof(rec_header), 0, &cli, cli_len) == -1) {
+				free(rec_header);
+				return -1;
+			}
+			if (sendto(sockfd, &rec_header, sizeof(rec_header), 0, &cli, cli_len) == -1) {
+				free(rec_header);
+				return -1;
+			}
+			if (sendto(sockfd, &rec_header, sizeof(rec_header), 0, &cli, cli_len) == -1) {
+				free(rec_header);
+				return -1;
+			}
+			if (sendto(sockfd, &rec_header, sizeof(rec_header), 0, &cli, cli_len) == -1) {
+				free(rec_header);
+				return -1;
+			}
+			
+			free(rec_header);
 			printf("server close.\n");
 			return 0;
 		}
@@ -297,9 +370,9 @@ int gbn_connect(int sockfd, const struct sockaddr *server, socklen_t socklen){
 		alarm(TIMEOUT);
 		/* waiting for receiving SYNACK */
 		gbnhdr *rec_header = malloc(sizeof(gbnhdr));
-		socklen_t tmp_sock_len;
-		if (maybe_recvfrom(sockfd, (char *)rec_header, sizeof(*rec_header), 0, &serv, &tmp_sock_len) == -1) {
+		if (maybe_recvfrom(sockfd, (char *)rec_header, sizeof(*rec_header), 0, server, &socklen) == -1) {
 			printf("sender error in recvfrom syn ack\n");
+			printf("sockfd: %d", sockfd);
 			attempt ++;
 			free(rec_header);
 			continue;
@@ -394,7 +467,8 @@ int gbn_accept(int sockfd, struct sockaddr *client, socklen_t *socklen){
 			cli_len = *tmp_sock_len;
 		}
 		free(send_header_syn);
-		if (sendto(sockfd, rec_header, sizeof(*rec_header), 0, tmp_sock, *tmp_sock_len) == -1 ) {
+		if (sendto(sockfd, rec_header, sizeof(*rec_header), 0, &cli, cli_len) == -1 ) {
+			printf("sockfd: %d", sockfd);
 			attempt ++;
 			printf("receiver send synack failed\n");
 			continue;
